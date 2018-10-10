@@ -120,10 +120,11 @@ def run_mdnet(img_list, init_bbox, gt=None,
 
     if analysis:
         load_PATH = '../models/latest.pth'
-        the_model = torch.load(load_PATH)
-        the_model_dict = the_model.state_dict()
+        the_model_dict = torch.load(load_PATH)
         fe_layers = ['layers.fc4.1.weight', 'layers.fc4.1.bias', 'layers.fc5.1.weight', 'layers.fc5.1.bias']
         pretrained_dict = {k: v for k, v in the_model_dict.items() if k in fe_layers}
+        name = ['layers.fc4.1.weight', 'layers.fc4.1.bias']
+        index = 127 - 1
 
     # Main loop
     for i in range(1, len(img_list)):
@@ -133,7 +134,9 @@ def run_mdnet(img_list, init_bbox, gt=None,
 
         # Track and save result
         if analysis:
-            tracker.model.load_state_dict(pretrained_dict)
+            for k in name:
+                tracker.model.state_dict()[k][index] = pretrained_dict[k][index]
+
         result_bb[i], target_score = tracker.track(image)
 
         spf = time.time() - tic
@@ -172,8 +175,8 @@ def run_mdnet(img_list, init_bbox, gt=None,
             if test_filter_resp:
                 tracker.test_filter_resp(image, gt[i])
 
-    save_PATH = '../models/latest.pth'
-    torch.save(tracker.model.state_dict(), save_PATH)
+    # save_PATH = '../models/latest.pth'
+    # torch.save(tracker.model.state_dict(), save_PATH)
 
     if gt is not None:
         if test_filter_resp:
