@@ -263,7 +263,8 @@ class MDNet(nn.Module):
                 params[k] = p
         return params
 
-    def forward(self, x, k=0, in_layer='conv1', out_layer='fc6', is_target=False, is_bg=False):
+    def forward(self, x, k=0, in_layer='conv1', out_layer='fc6',
+                is_target=False, is_bg=False, test_resp=False):
         #
         # forward model from in_layer to out_layer
 
@@ -276,7 +277,7 @@ class MDNet(nn.Module):
                 x = module(x)
 
                 if is_target or is_bg:
-                    if self.filter_resp_on_pos_samples is not None and name in self.fe_layers:
+                    if test_resp and self.filter_resp_on_pos_samples is not None and name in self.fe_layers:
                         if is_target:
                             self.filter_resp_on_pos_samples[name].append(
                                 torch.mean(torch.nn.functional.avg_pool2d(x.data, x.shape[-2:]),
