@@ -145,7 +145,7 @@ class MDNet(nn.Module):
             return self.resp_sum / self.resp_cnt if self.resp_cnt > 0 else 0
 
         def report_resp(self, responses, is_target=False, is_bg=False):
-            self.resp_sum += sum(responses)
+            self.resp_sum += torch.sum(responses)
             self.resp_cnt += len(responses)
             for idx, resp in enumerate(responses):
                 self.filter_meta[idx].report_resp(resp, is_target=is_target, is_bg=is_bg)
@@ -296,9 +296,9 @@ class MDNet(nn.Module):
 
                     if name in self.fe_layer_meta:
                         responses = torch.mean(torch.nn.functional.avg_pool2d(x.data, x.shape[-2:]),
-                                               dim=0).view(-1).cpu().numpy() \
+                                               dim=0).view(-1) \
                             if x.dim() == 4 \
-                            else torch.mean(x.data, dim=0).view(-1).cpu().numpy()
+                            else torch.mean(x.data, dim=0).view(-1)
                         self.fe_layer_meta[name].report_resp(responses, is_target=is_target, is_bg=is_bg)
 
                 if name == 'conv3':
