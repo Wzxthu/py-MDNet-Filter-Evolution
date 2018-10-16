@@ -32,6 +32,7 @@ class Tracker:
         print('Loading model from {}...'.format(opts['model_path']))
         self.model = MDNet(opts['model_path'],
                            fe_layers=opts['fe_layers'],
+                           dump_layers=opts['dump_layers'],
                            target_rel_thresh=opts['target_rel_thresh'],
                            unactivated_thresh=opts['unactivated_thresh'],
                            unactivated_cnt_thresh=opts['unactivated_cnt_thresh'],

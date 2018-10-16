@@ -153,6 +153,7 @@ class MDNet(nn.Module):
     def __init__(self,
                  model_path=None,
                  K=1,
+                 dump_layers=None,
                  fe_layers=None,
                  target_rel_thresh=0.1,
                  unactivated_thresh=0.01,
@@ -163,7 +164,7 @@ class MDNet(nn.Module):
         super(MDNet, self).__init__()
         if fe_layers is None:
             fe_layers = set()
-        self.fe_layers = fe_layers
+        self.dump_layers = dump_layers
         self.K = K
         self.layers = nn.Sequential(OrderedDict([
             ('conv1', nn.Sequential(nn.Conv2d(3, 96, kernel_size=7, stride=2),
@@ -184,10 +185,10 @@ class MDNet(nn.Module):
                                   nn.ReLU()))]))
 
         self.filter_resp_on_pos_samples = OrderedDict([
-            (name, []) for name, _ in self.layers.named_children() if name in fe_layers
+            (name, []) for name, _ in self.layers.named_children() if name in dump_layers
         ]) if record_resp else None
         self.filter_resp_on_neg_samples = OrderedDict([
-            (name, []) for name, _ in self.layers.named_children() if name in fe_layers
+            (name, []) for name, _ in self.layers.named_children() if name in dump_layers
         ]) if record_resp else None
 
         self.fe_layer_meta = self.create_fe_layer_meta(fe_layers,
@@ -277,7 +278,7 @@ class MDNet(nn.Module):
                 x = module(x)
 
                 if is_target or is_bg:
-                    if test_resp and self.filter_resp_on_pos_samples is not None and name in self.fe_layers:
+                    if test_resp and self.filter_resp_on_pos_samples is not None and name in self.dump_layers:
                         if is_target:
                             self.filter_resp_on_pos_samples[name].append(
                                 torch.mean(torch.nn.functional.avg_pool2d(x.data, x.shape[-2:]),
