@@ -7,7 +7,7 @@ opts['use_gpu'] = True
 opts['random'] = False
 
 opts['model_path'] = os.path.join(os.path.dirname(os.path.join(os.path.realpath(__file__))),
-                                  '../models/mdnet_vot-otb.pth')
+                                  '../models/mdnet_resnet_vot-otb.pth')
 
 opts['img_size'] = 107
 opts['padding'] = 16
@@ -52,9 +52,10 @@ opts['lr_mult'] = {'fc6': 10}
 opts['ft_layers'] = ['fc']
 
 # Filter evolution options
-opts['dump_layers'] = ['fc4', 'fc5']
-opts['fe_layers'] = ['fc4', 'fc5']
-# opts['fe_layers'] = None
+# opts['dump_layers'] = ['fc4', 'fc5']
+# opts['fe_layers'] = ['fc4', 'fc5']
+opts['dump_layers'] = None
+opts['fe_layers'] = None
 opts['target_rel_thresh'] = 0.01
 opts['unactivated_thresh'] = 0.01
 opts['unactivated_cnt_thresh'] = (opts['n_pos_update'] + opts['n_neg_update']) * opts['long_interval']

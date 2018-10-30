@@ -5,9 +5,10 @@ import torch
 import torch.utils.data as data
 
 sys.path.insert(0, '../modules')
+sys.path.insert(0, '/media/hdd1/datasets/ImageNet/Image')
 from sample_generator import *
 from utils import *
-
+from PIL import Image
 
 class RegionDataset(data.Dataset):
     def __init__(self, img_dir, img_list, gt, opts):
@@ -54,9 +55,11 @@ class RegionDataset(data.Dataset):
             n_neg = (self.batch_neg - len(neg_regions)) // (self.batch_frames - i)
             pos_examples = gen_samples(self.pos_generator, bbox, n_pos, overlap_range=self.overlap_pos)
             neg_examples = gen_samples(self.neg_generator, bbox, n_neg, overlap_range=self.overlap_neg)
-
-            pos_regions = np.concatenate((pos_regions, self.extract_regions(image, pos_examples)), axis=0)
-            neg_regions = np.concatenate((neg_regions, self.extract_regions(image, neg_examples)), axis=0)
+            try:
+                pos_regions = np.concatenate((pos_regions, self.extract_regions(image, pos_examples)), axis=0)
+                neg_regions = np.concatenate((neg_regions, self.extract_regions(image, neg_examples)), axis=0)
+            except:
+                continue
 
         pos_regions = torch.from_numpy(pos_regions).float()
         neg_regions = torch.from_numpy(neg_regions).float()
@@ -65,9 +68,13 @@ class RegionDataset(data.Dataset):
     next = __next__
 
     def extract_regions(self, image, samples):
-        regions = np.zeros((len(samples), self.crop_size, self.crop_size, 3), dtype='uint8')
+        # regions = np.zeros((len(samples), self.crop_size, self.crop_size, 3), dtype='uint8')
+        regions = []
         for i, sample in enumerate(samples):
-            regions[i] = crop_image(image, sample, self.crop_size, self.padding, True)
+            region = crop_image(image, sample, self.crop_size, self.padding, True)
+            if region is not None:
+                regions.append(region)
+        regions = np.asarray(regions, dtype='uint8')
 
         regions = regions.transpose(0, 3, 1, 2)
         regions = regions.astype('float32') - 128.

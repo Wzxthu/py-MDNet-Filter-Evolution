@@ -8,6 +8,7 @@ import scipy.io
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from resnet import ResNet, Bottleneck
 from torch.autograd import Variable
 
 
@@ -159,13 +160,14 @@ class MDNet(nn.Module):
                  unactivated_thresh=0.01,
                  unactivated_cnt_thresh = 1000,
                  low_resp_thresh=0.1,
-                 record_resp=True,
+                 record_resp=False,
                  lr_boost=1.5):
         super(MDNet, self).__init__()
         if fe_layers is None:
             fe_layers = set()
         self.dump_layers = dump_layers
         self.K = K
+        self.model = ResNet(Bottleneck, [3, 4, 6, 3], 2)
         self.layers = nn.Sequential(OrderedDict([
             ('conv1', nn.Sequential(nn.Conv2d(3, 96, kernel_size=7, stride=2),
                                     nn.ReLU(),
@@ -200,7 +202,7 @@ class MDNet(nn.Module):
         self.lr_boost = lr_boost
 
         self.branches = nn.ModuleList([nn.Sequential(nn.Dropout(0.5),
-                                                     nn.Linear(512, 2)) for _ in range(K)])
+                                                     nn.Linear(512 * Bottleneck.expansion, 2)) for _ in range(K)])
 
         if model_path is not None:
             if os.path.splitext(model_path)[1] == '.pth':
@@ -269,45 +271,45 @@ class MDNet(nn.Module):
         #
         # forward model from in_layer to out_layer
 
-        output = None
-        run = False
-        for name, module in self.layers.named_children():
-            if name == in_layer:
-                run = True
-            if run:
-                x = module(x)
-
-                if is_target or is_bg:
-                    if test_resp and self.filter_resp_on_pos_samples is not None and name in self.dump_layers:
-                        if is_target:
-                            self.filter_resp_on_pos_samples[name].append(
-                                torch.mean(torch.nn.functional.avg_pool2d(x.data, x.shape[-2:]),
-                                           dim=0).cpu().view(-1).numpy()
-                                if x.dim() == 4
-                                else torch.mean(x.data, dim=0).view(-1).cpu().numpy()
-                            )
-                        else:
-                            self.filter_resp_on_neg_samples[name].append(
-                                torch.mean(torch.nn.functional.avg_pool2d(x.data, x.shape[-2:]),
-                                           dim=0).cpu().view(-1).numpy()
-                                if x.dim() == 4
-                                else torch.mean(x.data, dim=0).view(-1).cpu().numpy()
-                            )
-
-                    if name in self.fe_layer_meta:
-                        responses = torch.mean(torch.nn.functional.avg_pool2d(x.data, x.shape[-2:]),
-                                               dim=0).view(-1) \
-                            if x.dim() == 4 \
-                            else torch.mean(x.data, dim=0).view(-1)
-                        self.fe_layer_meta[name].report_resp(responses, is_target=is_target, is_bg=is_bg)
-
-                if name == 'conv3':
-                    x = x.view(x.size(0), -1)
-                if name == out_layer:
-                    output = x
-                    if not is_bg and not is_target:
-                        return output
-
+        # output = None
+        # run = False
+        # for name, module in self.layers.named_children():
+        #     if name == in_layer:
+        #         run = True
+        #     if run:
+        #         x = module(x)
+        #
+        #         if is_target or is_bg:
+        #             if test_resp and self.filter_resp_on_pos_samples is not None and name in self.dump_layers:
+        #                 if is_target:
+        #                     self.filter_resp_on_pos_samples[name].append(
+        #                         torch.mean(torch.nn.functional.avg_pool2d(x.data, x.shape[-2:]),
+        #                                    dim=0).cpu().view(-1).numpy()
+        #                         if x.dim() == 4
+        #                         else torch.mean(x.data, dim=0).view(-1).cpu().numpy()
+        #                     )
+        #                 else:
+        #                     self.filter_resp_on_neg_samples[name].append(
+        #                         torch.mean(torch.nn.functional.avg_pool2d(x.data, x.shape[-2:]),
+        #                                    dim=0).cpu().view(-1).numpy()
+        #                         if x.dim() == 4
+        #                         else torch.mean(x.data, dim=0).view(-1).cpu().numpy()
+        #                     )
+        #
+        #             if name in self.fe_layer_meta:
+        #                 responses = torch.mean(torch.nn.functional.avg_pool2d(x.data, x.shape[-2:]),
+        #                                        dim=0).view(-1) \
+        #                     if x.dim() == 4 \
+        #                     else torch.mean(x.data, dim=0).view(-1)
+        #                 self.fe_layer_meta[name].report_resp(responses, is_target=is_target, is_bg=is_bg)
+        #
+        #         if name == 'conv3':
+        #             x = x.view(x.size(0), -1)
+        #         if name == out_layer:
+        #             output = x
+        #             if not is_bg and not is_target:
+        #                 return output
+        x = self.model.forward(x)
         x = self.branches[k](x)
         if out_layer == 'fc6':
             output = x
@@ -379,8 +381,15 @@ class MDNet(nn.Module):
 
     def load_model(self, model_path):
         states = torch.load(model_path)
-        shared_layers = states['shared_layers']
-        self.layers.load_state_dict(shared_layers)
+        net_states = self.model.state_dict()
+        for key, value in states.items():
+            if key in net_states.keys():
+                if key.startswith('fc'):
+                    continue
+                net_states[key].copy_(value)
+        #self.model.load_state_dict(states)
+        #shared_layers = states['shared_layers']
+        #self.layers.load_state_dict(shared_layers)
 
     def load_mat_model(self, matfile):
         mat = scipy.io.loadmat(matfile)

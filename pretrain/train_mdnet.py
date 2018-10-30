@@ -9,8 +9,8 @@ from data_prov import *
 from model import *
 from options import *
 
-img_home = '../dataset/'
-data_path = 'data/vot-otb.pkl'
+img_home = '/media/hdd1/datasets/ImageNet/Image'
+data_path = 'data/imagenet.pkl'
 
 
 def set_optimizer(model, lr_base, lr_mult=opts['lr_mult'], momentum=opts['momentum'], w_decay=opts['w_decay']):
@@ -31,13 +31,15 @@ def train_mdnet():
     with open(data_path, 'rb') as fp:
         data = pickle.load(fp)
 
-    K = len(data)
-    dataset = [None] * K
+    dataset = []
     for k, (seqname, seq) in enumerate(data.iteritems()):
         img_list = seq['images']
         gt = seq['gt']
+        if len(img_list) == 0:
+            continue
         img_dir = os.path.join(img_home, seqname)
-        dataset[k] = RegionDataset(img_dir, img_list, gt, opts)
+        dataset.append(RegionDataset(img_dir, img_list, gt, opts))
+    K = len(dataset)
 
     ## Init model ##
     model = MDNet(opts['init_model_path'], K)
