@@ -7,13 +7,13 @@ opts['use_gpu'] = True
 opts['random'] = False
 
 opts['model_path'] = os.path.join(os.path.dirname(os.path.join(os.path.realpath(__file__))),
-                                  '../models/mdnet_resnet_vot-otb.pth')
+                                  '../models/mdnet_res_imagenet.pth')
 
-opts['img_size'] = 107
+opts['img_size'] = 224
 opts['padding'] = 16
 
-opts['batch_pos'] = 32
-opts['batch_neg'] = 96
+opts['batch_pos'] = 32 / 2
+opts['batch_neg'] = 96 / 2
 opts['batch_neg_cand'] = 1024
 opts['batch_test'] = 256
 
