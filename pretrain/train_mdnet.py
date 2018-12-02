@@ -93,6 +93,7 @@ def train_mdnet(gpu):
     inst_emb_criterion = InstanceEmbeddingLoss()
     evaluator = Precision()
     optimizer = set_optimizer(model, opts['lr'])
+    best_loss = 300
 
     loss_meter = AverageMeter()
     for i in range(opts['n_cycles']):
@@ -132,6 +133,8 @@ def train_mdnet(gpu):
         loss_meter.dampen(0.1)
 
         cur_prec = prec.mean()
+        cur_loss = loss.item()
+
         print("Mean Precision: %.3f" % cur_prec)
         if cur_prec >= best_prec:
             best_prec = cur_prec
@@ -139,11 +142,22 @@ def train_mdnet(gpu):
                 model = model.cpu()
             states = {'shared_layers': model.layers.state_dict(),
                       'best_prec': cur_prec}
-            print("Saving model to %s" % opts['model_path'])
-            torch.save(states, opts['model_path'])
+            print("Saving model to %s" % opts['model_path_prec'])
+            torch.save(states, opts['model_path_prec'])
             if opts['use_gpu']:
                 model = model.cuda()
 
+        print("Loss: %.3f" % cur_loss)
+        if cur_loss < best_loss:
+            best_loss = cur_loss
+            if opts['use_gpu']:
+                model = model.cpu()
+            states = {'shared_layers': model.layers.state_dict(),
+                      'best_prec': cur_prec}
+            print("Saving model to %s" % opts['model_path_loss'])
+            torch.save(states, opts['model_path_loss'])
+            if opts['use_gpu']:
+                model = model.cuda()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

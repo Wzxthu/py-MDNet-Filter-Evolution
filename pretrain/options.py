@@ -9,15 +9,16 @@ opts['random'] = False
 # opts['data_path'] = 'data/vot-otb.pkl'
 opts['data_path'] = 'data/imagenet.pkl'
 
-# opts['model_type'] = 'VGG-M'
-# opts['init_model_path'] = '../models/imagenet-vgg-m.mat'
+opts['model_type'] = 'VGG-M'
+opts['init_model_path'] = '../models/imagenet-vgg-m.mat'
 # opts['model_path'] = '../models/mdnet_vot-otb_new.pth'
 # opts['model_path'] = '../models/mdnet_imagenet_new.pth'
-opts['model_type'] = 'ResNet18_2'
+# opts['model_type'] = 'ResNet18_2'
 # opts['init_model_path'] = None
 # opts['init_model_path'] = '../models/mdnet_resnet_107_fc.pth'
-opts['init_model_path'] = '../models/mdnet_resnet_imagenet_conv3.pth'
-opts['model_path'] = '../models/mdnet_resnet_imagenet_conv3_new.pth'
+# opts['init_model_path'] = '../models/mdnet_resnet_imagenet_conv3.pth'
+opts['model_path_prec'] = '../models/mdnet_imagenet_new_prec.pth'
+opts['model_path_loss'] = '../models/mdnet_imagenet_new_loss.pth'
 
 opts['batch_frames'] = 8
 opts['batch_pos'] = 32
